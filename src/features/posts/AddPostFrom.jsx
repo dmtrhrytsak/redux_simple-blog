@@ -2,14 +2,13 @@ import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { addPost } from './posts.slice';
-import { selectAllUsers } from '../users/users.slice';
 
 const AddPostForm = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [userId, setUserId] = useState('');
 
-  const users = useSelector(selectAllUsers);
+  const { users, status } = useSelector((state) => state.users);
 
   const dispatch = useDispatch();
 
@@ -17,16 +16,19 @@ const AddPostForm = () => {
   const onContentChange = (e) => setContent(e.target.value);
   const onAuthorChange = (e) => setUserId(e.target.value);
 
-  const onPostSave = () => {
-    if (title && content) {
-      dispatch(addPost(title, content, userId));
+  const canSave = [title, content, userId].every(Boolean) && status === 'idle';
+
+  const onPostSave = async () => {
+    if (!canSave) {
+      return;
     }
+
+    dispatch(addPost({ title, body: content, userId }));
 
     setTitle('');
     setContent('');
+    setUserId('');
   };
-
-  const canSave = title && content && userId;
 
   return (
     <section>

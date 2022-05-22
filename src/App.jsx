@@ -5,7 +5,11 @@ function App() {
   return (
     <main>
       <AddPostForm />
-      <PostsList />
+
+      <section>
+        <h2>Posts</h2>
+        <PostsList />
+      </section>
     </main>
   );
 }
