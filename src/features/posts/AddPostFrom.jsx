@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 import { addPost } from './posts.slice';
 
@@ -10,6 +11,7 @@ const AddPostForm = () => {
 
   const { users, status } = useSelector((state) => state.users);
 
+  const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const onTitleChange = (e) => setTitle(e.target.value);
@@ -23,11 +25,13 @@ const AddPostForm = () => {
       return;
     }
 
-    dispatch(addPost({ title, body: content, userId }));
+    await dispatch(addPost({ title, body: content, userId })).unwrap();
 
     setTitle('');
     setContent('');
     setUserId('');
+
+    navigate('/');
   };
 
   return (

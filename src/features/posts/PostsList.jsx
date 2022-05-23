@@ -1,19 +1,9 @@
-import { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 
-import { fetchPosts } from './posts.slice';
 import PostItem from './PostsItem';
 
 const PostsList = () => {
   const { posts, status, error } = useSelector((state) => state.posts);
-
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    if (status === 'idle') {
-      dispatch(fetchPosts());
-    }
-  }, [status, dispatch]);
 
   const orderedPosts = posts
     .slice()
@@ -28,11 +18,13 @@ const PostsList = () => {
   }
 
   return (
-    <div>
+    <section>
+      <h2>Posts</h2>
+
       {orderedPosts.map((post) => (
         <PostItem key={post.id} post={post} />
       ))}
-    </div>
+    </section>
   );
 };
 
