@@ -1,8 +1,17 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import {
+  createSlice,
+  createAsyncThunk,
+  createSelector,
+  createEntityAdapter,
+} from '@reduxjs/toolkit';
 import axios from 'axios';
 import { sub } from 'date-fns';
 
 const POSTS_URL = 'https://jsonplaceholder.typicode.com/posts';
+
+const postsAdapter = createEntityAdapter({
+  sortComparer: (a, b) => b.date.localeCompare(a.data),
+});
 
 export const fetchPosts = createAsyncThunk('posts/fetchPosts', async () => {
   try {
@@ -98,11 +107,11 @@ export const deletePost = createAsyncThunk(
   }
 );
 
-const initialState = {
-  posts: [],
+const initialState = postsAdapter.getInitialState({
   status: 'idle',
   error: null,
-};
+  count: 0,
+});
 
 const postsSlice = createSlice({
   name: 'posts',
@@ -111,13 +120,16 @@ const postsSlice = createSlice({
     addReaction: (state, action) => {
       const { postId, reaction } = action.payload;
 
-      const post = state.posts.find((post) => post.id === postId);
+      const post = state.entities[postId];
 
       if (!post) {
         return;
       }
 
       post.reactions[reaction] += 1;
+    },
+    increaseCount(state) {
+      state.count = state.count + 1;
     },
   },
   extraReducers: (builder) => {
@@ -127,7 +139,8 @@ const postsSlice = createSlice({
       })
       .addCase(fetchPosts.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.posts = action.payload;
+
+        postsAdapter.upsertMany(state, action.payload);
       })
       .addCase(fetchPosts.rejected, (state, action) => {
         state.status = 'failed';
@@ -139,7 +152,7 @@ const postsSlice = createSlice({
       .addCase(addPost.fulfilled, (state, action) => {
         state.status = 'succeeded';
 
-        state.posts.push(action.payload);
+        postsAdapter.addOne(state, action.payload);
       })
       .addCase(updatePost.pending, (state) => {
         state.status = 'loading';
@@ -147,13 +160,7 @@ const postsSlice = createSlice({
       .addCase(updatePost.fulfilled, (state, action) => {
         state.status = 'succeeded';
 
-        const { id } = action.payload;
-
-        const posts = state.posts.map((post) =>
-          post.id === id ? action.payload : post
-        );
-
-        state.posts = posts;
+        postsAdapter.upsertOne(state, action.payload);
       })
       .addCase(deletePost.pending, (state) => {
         state.status = 'loading';
@@ -161,11 +168,7 @@ const postsSlice = createSlice({
       .addCase(deletePost.fulfilled, (state, action) => {
         state.status = 'succeeded';
 
-        const { postId } = action.payload;
-
-        const posts = state.posts.filter((post) => post.id !== postId);
-
-        state.posts = posts;
+        postsAdapter.removeOne(state, action.payload.postId);
       })
       .addCase(deletePost.rejected, (state, action) => {
         state.status = 'failed';
@@ -174,10 +177,22 @@ const postsSlice = createSlice({
   },
 });
 
-export const { addReaction } = postsSlice.actions;
+export const { addReaction, increaseCount } = postsSlice.actions;
 
-export const selectAllPosts = (state) => state.posts.posts;
-export const selectPostById = (state, postId) =>
-  state.posts.posts.find((post) => post.id === postId) || null;
+export const {
+  selectAll: selectAllPosts,
+  selectById: selectPostById,
+  selectIds: selectPostIds,
+} = postsAdapter.getSelectors((state) => state.posts);
+
+export const selectPostsByUser = createSelector(
+  [selectAllPosts, (state, userId) => userId],
+  (posts, userId) => posts.filter((post) => post.userId === userId)
+);
+
+export const selectPostsStatus = (state) => state.posts.status;
+export const selectPostsError = (state) => state.posts.error;
+
+export const selectCount = (state) => state.posts.count;
 
 export default postsSlice.reducer;

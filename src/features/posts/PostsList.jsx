@@ -1,13 +1,17 @@
 import { useSelector } from 'react-redux';
 
+import {
+  selectPostsStatus,
+  selectPostsError,
+  selectPostIds,
+} from './posts.slice';
+
 import PostItem from './PostsItem';
 
 const PostsList = () => {
-  const { posts, status, error } = useSelector((state) => state.posts);
-
-  const orderedPosts = posts
-    .slice()
-    .sort((a, b) => b.date.localeCompare(a.date));
+  const orderedPostIds = useSelector(selectPostIds);
+  const status = useSelector(selectPostsStatus);
+  const error = useSelector(selectPostsError);
 
   if (status === 'loading') {
     return <p>Loading...</p>;
@@ -21,8 +25,8 @@ const PostsList = () => {
     <section>
       <h2>Posts</h2>
 
-      {orderedPosts.map((post) => (
-        <PostItem key={post.id} post={post} />
+      {orderedPostIds.map((postId) => (
+        <PostItem key={postId} postId={postId} />
       ))}
     </section>
   );
